@@ -7,7 +7,7 @@ from django.conf import settings
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from .models import Post, Category, Location, Comment
+from .models import Post, Category, Comment
 from .forms import PostForm, CommentForm
 
 User = get_user_model()

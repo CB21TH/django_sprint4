@@ -4,7 +4,16 @@ from . import views
 app_name = 'pages'
 
 urlpatterns = [
-    path('about/', views.AboutView.as_view(), name='about'),
-    path('rules/', views.RulesView.as_view(), name='rules'),
-    path('auth/registration/', views.RegistrationCreateView.as_view(), name='registration'),
+    path(
+        'about/',
+        views.AboutView.as_view(),
+        name='about'),
+    path(
+        'rules/',
+        views.RulesView.as_view(),
+        name='rules'),
+    path(
+        'auth/registration/',
+        views.RegistrationCreateView.as_view(),
+        name='registration'),
 ]
