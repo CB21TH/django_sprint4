@@ -27,7 +27,7 @@ def index(request):
     paginator = Paginator(post_list, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'blog/index.html', {'page_obj': page_obj})
+    return render(request, 'blog/index.html', {'post_list': page_obj})
 
 
 def post_detail(request, pk):
@@ -49,7 +49,7 @@ def category_posts(request, slug):
     page_obj = paginator.get_page(page_number)
     return render(request, 'blog/category.html', {
         'category': category,
-        'page_obj': page_obj,
+        'post_list': page_obj,
     })
 
 
@@ -61,10 +61,10 @@ def profile(request, username):
         post_list = get_published_posts().filter(author=author)
     paginator = Paginator(post_list, settings.POSTS_PER_PAGE)
     page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    posts = paginator.get_page(page_number)
     return render(request, 'blog/profile.html', {
         'author': author,
-        'page_obj': page_obj,
+        'posts': posts,
     })
 
 
