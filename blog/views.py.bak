@@ -1,0 +1,128 @@
+from .models import Post, Category, Comment
+from django.shortcuts import render
+
+from django.http import Http404
+
+posts = [
+    {
+        'id': 0,
+        'location': 'Остров отчаянья',
+        'date': '30 сентября 1659 года',
+        'category': 'travel',
+        'text': '''Наш корабль, застигнутый в открытом море
+                страшным штормом, потерпел крушение.
+                Весь экипаж, кроме меня, утонул; я же,
+                несчастный Робинзон Крузо, был выброшен
+                полумёртвым на берег этого проклятого острова,
+                который назвал островом Отчаяния.''',
+    },
+    {
+        'id': 1,
+        'location': 'Остров отчаянья',
+        'date': '1 октября 1659 года',
+        'category': 'not-my-day',
+        'text': '''Проснувшись поутру, я увидел, что наш корабль сняло
+                с мели приливом и пригнало гораздо ближе к берегу.
+                Это подало мне надежду, что, когда ветер стихнет,
+                мне удастся добраться до корабля и запастись едой и
+                другими необходимыми вещами. Я немного приободрился,
+                хотя печаль о погибших товарищах не покидала меня.
+                Мне всё думалось, что, останься мы на корабле, мы
+                непременно спаслись бы. Теперь из его обломков мы могли бы
+                построить баркас, на котором и выбрались бы из этого
+                гиблого места.''',
+    },
+    {
+        'id': 2,
+        'location': 'Остров отчаянья',
+        'date': '25 октября 1659 года',
+        'category': 'not-my-day',
+        'text': '''Всю ночь и весь день шёл дождь и дул сильный
+                порывистый ветер. 25 октября.  Корабль за ночь разбило
+                в щепки; на том месте, где он стоял, торчат какие-то
+                жалкие обломки,  да и те видны только во время отлива.
+                Весь этот день я хлопотал  около вещей: укрывал и
+                укутывал их, чтобы не испортились от дождя.''',
+    },
+]
+
+
+def index(request):
+    """Главная страница / Лента записей"""
+    context = {'posts': posts}
+    return render(request, 'blog/index.html', context)
+
+
+def post_detail(request, id):
+    """Отображение полного описания выбранной записи"""
+    post = [post for post in posts if post['id'] == id]
+    if not post:
+        raise Http404('Вы указали неверный id')
+    context = {'post': post[0]}
+    return render(request, 'blog/detail.html', context)
+
+
+def category_posts(request, category_slug):
+    """Отображение публикаций категории"""
+    sorted_posts = [post for post in posts if post['category']
+                    == category_slug]
+    context = {'category': category_slug,
+               'posts': sorted_posts}
+    return render(request, 'blog/category.html', context)
+
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.views.generic import UpdateView
+from django.urls import reverse
+
+User = get_user_model()
+
+def profile(request, username):
+    author = get_object_or_404(User, username=username)
+    # Показываем все посты автора (опубликованные и неопубликованные — для владельца)
+    if request.user == author:
+        posts = author.posts.all()  # если related_name='posts'
+    else:
+        posts = author.posts.filter(is_published=True, pub_date__lte=timezone.now(), category__is_published=True)
+    # Пагинацию добавим позже, пока просто передаём
+    return render(request, 'blog/profile.html', {'author': author, 'posts': posts})
+
+class ProfileUpdateView(UpdateView):
+    model = User
+    fields = ['first_name', 'last_name', 'email', 'username']
+    template_name = 'blog/profile_edit.html'
+
+    def get_object(self):
+        return self.request.user
+
+    def get_success_url(self):
+        return reverse('blog:profile', args=[self.request.user.username])
+
+from .forms import CommentForm
+
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.author = request.user
+            comment.save()
+    return redirect('blog:post_detail', pk=post_id)
+from django.views.generic import CreateView
+from django.urls import reverse_lazy
+from .forms import PostForm
+
+class PostCreateView(CreateView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('blog:profile', args=[self.request.user.username])
